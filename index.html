@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O Pior Jogo de Senha do Mundo 🔐</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #030712;
+      --surface:   #0f172a;
+      --surface2:  #1e293b;
+      --border:    #334155;
+      --text:      #e2e8f0;
+      --dim:       #94a3b8;
+      --muted:     #475569;
+
+      --cat-basico:     #22d3ee;
+      --cat-matematica: #c084fc;
+      --cat-emojis:     #fbbf24;
+      --cat-cultura:    #f472b6;
+      --cat-especiais:  #fb923c;
+      --cat-estrutura:  #60a5fa;
+      --cat-desafio:    #f87171;
+      --green:          #4ade80;
+
+      --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* dot-grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── TOP PROGRESS STRIP ─────────────────────── */
+    #top-strip { position: fixed; top:0; left:0; right:0; height:3px; background:var(--surface2); z-index:100; }
+    #top-fill  { height:100%; background:linear-gradient(90deg,#f472b6,#22d3ee,#4ade80); background-size:200%; animation:gradShift 4s ease infinite; transition:width .5s var(--smooth); width:0%; }
+    @keyframes gradShift { 0%,100%{background-position:0%} 50%{background-position:100%} }
+
+    /* ── TOAST ──────────────────────────────────── */
+    #toast {
+      position:fixed; bottom:28px; left:50%;
+      transform:translateX(-50%) translateY(80px);
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:40px; padding:10px 22px;
+      font-family:'Press Start 2P',monospace; font-size:8px;
+      color:var(--cat-emojis); z-index:99;
+      opacity:0; transition:transform .4s var(--spring), opacity .3s;
+      white-space:nowrap; box-shadow:0 8px 32px rgba(0,0,0,.5);
+    }
+    #toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+    /* ── CONFETTI ───────────────────────────────── */
+    #confetti { position:fixed; inset:0; pointer-events:none; z-index:201; overflow:hidden; }
+    .cbit { position:absolute; top:-20px; animation:cFall linear forwards; user-select:none; }
+    @keyframes cFall {
+      0%   { transform:translateY(0)     rotate(0deg)   translateX(0);       opacity:1; }
+      85%  { opacity:1; }
+      100% { transform:translateY(110vh) rotate(800deg) translateX(var(--dx)); opacity:0; }
+    }
+
+    /* ── VICTORY ────────────────────────────────── */
+    #victory {
+      position:fixed; inset:0; background:rgba(3,7,18,.96);
+      z-index:200; display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity .6s;
+    }
+    #victory.show { opacity:1; pointer-events:all; }
+    .v-box { text-align:center; padding:24px; animation:vPop .7s var(--spring); }
+    @keyframes vPop { from{transform:scale(.55) translateY(40px);opacity:0} to{transform:scale(1);opacity:1} }
+    .v-trophy { font-size:96px; display:block; margin-bottom:24px; animation:tSpin .9s var(--spring); }
+    @keyframes tSpin { from{transform:scale(0) rotate(-200deg)} to{transform:scale(1) rotate(0)} }
+    .v-title {
+      font-family:'Press Start 2P',monospace; font-size:clamp(13px,3.5vw,24px); line-height:1.8;
+      background:linear-gradient(135deg,#fbbf24,#f472b6,#22d3ee);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .v-sub { margin-top:16px; font-size:15px; color:var(--dim); line-height:1.6; }
+    .btn-restart {
+      margin-top:28px; display:inline-block;
+      padding:14px 32px; font-family:'Press Start 2P',monospace; font-size:9px;
+      background:linear-gradient(135deg,#f472b6,#c084fc); color:#fff;
+      border:none; border-radius:10px; cursor:pointer; letter-spacing:.05em;
+      transition:transform .2s, box-shadow .2s;
+      box-shadow:0 4px 24px rgba(244,114,182,.35);
+    }
+    .btn-restart:hover { transform:scale(1.06); box-shadow:0 8px 40px rgba(244,114,182,.55); }
+
+    /* ── LAYOUT ─────────────────────────────────── */
+    .wrap { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:60px 20px 90px; }
+
+    /* ── HEADER ─────────────────────────────────── */
+    header { text-align:center; margin-bottom:38px; }
+    .game-title {
+      font-family:'Press Start 2P',monospace; font-size:clamp(11px,2.6vw,18px); line-height:2;
+      background:linear-gradient(135deg,#f472b6 30%,#22d3ee 70%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+      animation:titlePulse 3s ease-in-out infinite alternate;
+    }
+    @keyframes titlePulse {
+      from{filter:drop-shadow(0 0 12px rgba(244,114,182,.35))}
+      to  {filter:drop-shadow(0 0 32px rgba(34,211,238,.55))}
+    }
+    .game-sub { margin-top:10px; font-size:12px; color:var(--muted); letter-spacing:.04em; }
+
+    .prog-row { display:flex; align-items:center; gap:14px; margin-top:22px; justify-content:center; }
+    .prog-track { width:260px; height:10px; background:var(--surface2); border-radius:5px; overflow:hidden; border:1px solid var(--border); }
+    .prog-fill  { height:100%; background:linear-gradient(90deg,#f472b6,#22d3ee); border-radius:5px; transition:width .5s var(--spring); width:0%; }
+    .prog-lbl   { font-family:'Press Start 2P',monospace; font-size:9px; color:#22d3ee; min-width:52px; }
+
+    /* ── INPUT ──────────────────────────────────── */
+    .input-zone { margin:30px 0; }
+    .input-wrap { position:relative; }
+    #pw {
+      width:100%; padding:18px 80px 18px 20px;
+      font-family:'JetBrains Mono',monospace; font-size:16px;
+      background:var(--surface); color:var(--text);
+      border:2px solid var(--border); border-radius:14px;
+      outline:none; transition:border-color .3s, box-shadow .3s;
+    }
+    #pw:focus { border-color:#22d3ee; box-shadow:0 0 0 4px rgba(34,211,238,.12), 0 4px 32px rgba(34,211,238,.07); }
+    #pw::placeholder { color:var(--muted); }
+    #carcnt {
+      position:absolute; right:16px; top:50%; transform:translateY(-50%);
+      font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); pointer-events:none;
+    }
+
+    /* ── RULES HEADER ───────────────────────────── */
+    .rules-hdr { font-family:'Press Start 2P',monospace; font-size:8px; color:var(--muted); letter-spacing:.25em; margin-bottom:18px; }
+
+    /* ── RULE CARD ──────────────────────────────── */
+    #rules { display:flex; flex-direction:column; gap:9px; }
+
+    .rcard {
+      --cc: var(--cat-basico);
+      display:grid; grid-template-columns:28px 1fr; gap:14px; align-items:start;
+      padding:13px 16px; background:var(--surface);
+      border:1px solid var(--border); border-left:4px solid var(--cc);
+      border-radius:12px; position:relative; overflow:hidden;
+      animation:slideIn .45s var(--spring) both;
+      transition:background .35s, border-color .35s;
+    }
+    .rcard.passed {
+      background:rgba(74,222,128,.04);
+      border-color:rgba(74,222,128,.22); border-left-color:var(--green);
+    }
+    .rcard.just-passed::after {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent,rgba(74,222,128,.14),transparent);
+      animation:shimmer .7s ease forwards;
+    }
+    @keyframes shimmer { from{transform:translateX(-100%)} to{transform:translateX(200%)} }
+    @keyframes slideIn { from{opacity:0;transform:translateX(52px) scale(.96)} to{opacity:1;transform:translateX(0) scale(1)} }
+    @keyframes slideOut {
+      from{opacity:1;transform:translateX(0);max-height:200px;margin-bottom:9px;padding:13px 16px}
+      to  {opacity:0;transform:translateX(-36px);max-height:0;margin-bottom:0;padding:0}
+    }
+    .rcard.removing { animation:slideOut .32s ease forwards !important; pointer-events:none; }
+
+    .ricon { font-size:18px; line-height:1.3; margin-top:1px; }
+    .rcard.just-passed .ricon { animation:iconBounce .5s var(--spring); }
+    @keyframes iconBounce { 0%{transform:scale(.35) rotate(-15deg)} 60%{transform:scale(1.35) rotate(8deg)} 100%{transform:scale(1) rotate(0)} }
+
+    .rcontent { min-width:0; }
+    .rmeta { display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+    .rnum  { font-family:'Press Start 2P',monospace; font-size:6.5px; color:var(--muted); }
+    .rcat  {
+      font-family:'Press Start 2P',monospace; font-size:6px;
+      padding:2px 7px; border-radius:4px;
+      color:var(--cc); border:1px solid var(--cc);
+      background:color-mix(in srgb, var(--cc) 9%, transparent);
+      white-space:nowrap;
+    }
+    .rtext { font-size:13.5px; font-weight:700; line-height:1.5; color:var(--text); }
+    .rcard.passed .rtext { color:var(--muted); font-weight:600; }
+
+    /* category color bindings */
+    .cc-basico     { --cc: var(--cat-basico); }
+    .cc-matematica { --cc: var(--cat-matematica); }
+    .cc-emojis     { --cc: var(--cat-emojis); }
+    .cc-cultura    { --cc: var(--cat-cultura); }
+    .cc-especiais  { --cc: var(--cat-especiais); }
+    .cc-estrutura  { --cc: var(--cat-estrutura); }
+    .cc-desafio    { --cc: var(--cat-desafio); }
+
+    /* ── HINTS PANEL ────────────────────────────── */
+    .hints-wrap { margin-top:32px; }
+    .hints-toggle {
+      width:100%; padding:12px 18px;
+      font-family:'Press Start 2P',monospace; font-size:8px;
+      color:var(--dim); background:var(--surface);
+      border:1px solid var(--border); border-radius:10px;
+      cursor:pointer; text-align:left; letter-spacing:.05em;
+      transition:background .2s, border-color .2s, color .2s;
+      display:flex; align-items:center; gap:10px;
+    }
+    .hints-toggle:hover { background:var(--surface2); border-color:#22d3ee; color:#22d3ee; }
+    .hints-toggle .arrow { margin-left:auto; transition:transform .3s; }
+    .hints-toggle.open .arrow { transform:rotate(180deg); }
+    .hints-body {
+      margin-top:12px; padding:18px;
+      background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      display:none;
+    }
+    .hints-body.open { display:block; animation:fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    .hints-title { font-family:'Press Start 2P',monospace; font-size:7px; color:var(--muted); letter-spacing:.2em; margin-bottom:14px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .chip {
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      padding:8px 12px; background:var(--surface2);
+      border:1px solid var(--border); border-radius:8px;
+      cursor:pointer; transition:border-color .2s, background .2s, transform .15s;
+      min-width:52px;
+    }
+    .chip:hover { border-color:#22d3ee; background:rgba(34,211,238,.08); transform:scale(1.05); }
+    .chip:active { transform:scale(.95); }
+    .chip-glyph { font-size:20px; line-height:1; }
+    .chip-lbl   { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); }
+    .hints-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.6; }
+
+    /* ── SCROLLBAR ──────────────────────────────── */
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:var(--surface); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width:580px) {
+      .wrap { padding:52px 14px 70px; }
+      #pw   { font-size:14px; }
+      .rtext{ font-size:12.5px; }
+      .prog-track { width:170px; }
+      .game-title { font-size:clamp(10px,3.2vw,14px); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="top-strip"><div id="top-fill"></div></div>
+<div id="confetti"></div>
+<div id="toast">🔓 Nova regra desbloqueada!</div>
+
+<!-- VICTORY SCREEN -->
+<div id="victory">
+  <div class="v-box">
+    <span class="v-trophy">🏆</span>
+    <div class="v-title">VOCÊ É UM<br>GÊNIO ABSURDO!</div>
+    <p class="v-sub">
+      Você criou a pior senha do universo e sobreviveu.<br>
+      <strong style="color:#fbbf24">65 regras</strong> vencidas. Lenda!
+    </p>
+    <button class="btn-restart" onclick="restart()">▶ JOGAR DE NOVO</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="wrap">
+  <header>
+    <div class="game-title">O PIOR JOGO DE<br>SENHA DO MUNDO</div>
+    <p class="game-sub">📅 <span id="dateStr">—</span> &nbsp;|&nbsp; 65 regras de puro sofrimento 😈</p>
+    <div class="prog-row">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <span class="prog-lbl" id="progLbl">0/65</span>
+    </div>
+  </header>
+
+  <div class="input-zone">
+    <div class="input-wrap">
+      <input id="pw" type="text" placeholder="Crie sua senha impossível aqui... 🤔"
+             autocomplete="off" spellcheck="false">
+      <span id="carcnt">0 car.</span>
+    </div>
+  </div>
+
+  <p class="rules-hdr">▸ REGRAS DESBLOQUEADAS</p>
+  <div id="rules"></div>
+
+  <!-- HINTS PANEL -->
+  <div class="hints-wrap">
+    <button class="hints-toggle" onclick="toggleHints(this)">
+      💡 Dicas &amp; Caracteres Especiais
+      <span class="arrow">▾</span>
+    </button>
+    <div class="hints-body" id="hintsBody">
+      <p class="hints-title">▸ CLIQUE PARA INSERIR NA SENHA</p>
+      <div class="chips" id="chipsGrid"></div>
+      <p class="hints-note">
+        ⚠️ <strong>Dica:</strong> Você pode copiar e colar qualquer caractere diretamente na senha.<br>
+        🔴 Hoje é <strong id="piDay" style="color:#f472b6"></strong> — use isso com sabedoria!
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   RULE ENGINE — Sistema Modular de Regras
+   ══════════════════════════════════════════════════════════
+   Como adicionar novas regras:
+
+     engine.addRule({
+       category: 'Básico',       // agrupa visualmente
+       text: 'Deve conter X.',   // texto exibido ao jogador
+       check: v => v.includes('X') // função de validação
+     });
+
+   Ou em lote:
+     engine.addRules([{ ... }, { ... }]);
+   ═══════════════════════════════════════════════════════════ */
+class RuleEngine {
+  constructor() { this.rules = []; }
+
+  addRule({ text, check, category = 'Geral' }) {
+    this.rules.push({
+      id:       this.rules.length + 1,
+      text, check, category,
+      slug:     this._slug(category)
+    });
+    return this; // chainable
+  }
+
+  shuffle() {
+    for (let i = this.rules.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.rules[i], this.rules[j]] = [this.rules[j], this.rules[i]];
+    }
+  }
+
+  addRules(arr) { arr.forEach(r => this.addRule(r)); return this; }
+
+  _slug(cat) {
+    return cat.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z]/g, '');
+  }
+
+  _safe(fn, v) { try { return !!fn(v); } catch { return false; } }
+
+  evaluate(v) {
+    return this.rules.map(r => ({ ...r, passed: this._safe(r.check, v) }));
+  }
+
+  /* progressive reveal: show up through first failed rule */
+  visible(v) {
+    const res = this.evaluate(v);
+    const fi = res.findIndex(r => !r.passed);
+    return fi === -1 ? res : res.slice(0, fi + 1);
+  }
+
+  stats(v) {
+    const res = this.evaluate(v);
+    const p = res.filter(r => r.passed).length;
+    return { passed: p, total: res.length, pct: Math.round(p / res.length * 100), done: p === res.length };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════ */
+const _seg    = new Intl.Segmenter();
+const gs      = v => [..._seg.segment(v)].map(s => s.segment);               // grapheme array
+const emojis  = v => v.match(/\p{Emoji_Presentation}/gu) ?? [];               // emoji list
+const digs    = v => v.match(/\d/g) ?? [];                                     // digit list
+const dsum    = v => digs(v).reduce((s, d) => s + +d, 0);                     // digit sum
+const has     = (v, arr) => arr.some(x => v.toLowerCase().includes(x.toLowerCase()));
+const spc     = v => new Set(v.match(/[!@#$%^&*()\-_=+<>?\/\\|~`;:,.\[\]{}]/g) ?? []);
+const wds     = v => v.trim().split(/\s+/).filter(Boolean).length;
+const vowels  = v => (v.match(/[aeiouáéíóúâêîôûãõàèìòùAEIOUÁÉÍÓÚÂÊÎÔÛÃÕÀÈÌÒÙ]/g) ?? []).length;
+
+/* ═══════════════════════════════════════════════════════════
+   REGRAS  (65 total = 15 originais + 50 novas)
+   ═══════════════════════════════════════════════════════════ */
+const engine = new RuleEngine().addRules([
+
+  /* ── BÁSICO (5) ──────────────────────────────────────── */
+  { category: 'Básico',
+    text: 'A senha deve ter pelo menos 5 caracteres.',
+    check: v => gs(v).length >= 5 },
+
+  { category: 'Básico',
+    text: 'Deve conter pelo menos um número.',
+    check: v => /\d/.test(v) },
+
+  { category: 'Básico',
+    text: 'Deve conter pelo menos uma letra maiúscula.',
+    check: v => /[A-Z]/.test(v) },
+
+  { category: 'Básico',
+    text: 'Deve conter pelo menos uma letra minúscula.',
+    check: v => /[a-z]/.test(v) },
+
+  { category: 'Emojis',
+    text: 'Deve conter pelo menos um emoji.',
+    check: v => emojis(v).length > 0 },
+
+  /* ── MATEMÁTICA (8) ──────────────────────────────────── */
+  { category: 'Matemática',
+    text: 'Deve conter os primeiros dígitos de Pi.',
+    check: v => v.includes('3.14') },
+
+  { category: 'Matemática',
+    text: 'Hoje é o Dia do Pi (14/03)! Inclua o símbolo.',
+    check: v => v.includes('π') },
+
+  { category: 'Matemática',
+    text: 'Deve conter a fórmula da água.',
+    check: v => v.includes('H2O') },
+
+  { category: 'Matemática',
+    text: 'Deve conter o símbolo do infinito.',
+    check: v => v.includes('∞') },
+
+  { category: 'Matemática',
+    text: 'Deve conter o número 42.',
+    check: v => v.includes('42') },
+
+  { category: 'Matemática',
+    text: 'Deve conter o número áureo.',
+    check: v => v.includes('1.618') },
+
+  { category: 'Matemática',
+    text: 'Deve conter a equação de Einstein.',
+    check: v => v.includes('E=mc²') || v.includes('E=mc2') },
+
+  { category: 'Matemática',
+    text: 'Deve conter o símbolo de raiz quadrada.',
+    check: v => v.includes('√') },
+
+  /* ── EMOJIS (10) ─────────────────────────────────────── */
+  { category: 'Emojis',
+    text: 'Deve conter o emoji de dedo apontando para cima.',
+    check: v => v.includes('👆') },
+
+  { category: 'Emojis',
+    text: 'Deve conter a bandeira da Holanda.',
+    check: v => v.includes('🇳🇱') },
+
+  { category: 'Emojis',
+    text: 'A bandeira da Holanda deve estar na posição 5.',
+    check: v => gs(v).indexOf('🇳🇱') === 4 },
+
+  { category: 'Emojis',
+    text: 'Deve conter a bandeira do Brasil.',
+    check: v => v.includes('🇧🇷') },
+
+  { category: 'Emojis',
+    text: 'Deve conter o emoji de fogo.',
+    check: v => v.includes('🔥') },
+
+  { category: 'Emojis',
+    text: 'Deve conter um coração.',
+    check: v => v.includes('❤') },
+
+  { category: 'Emojis',
+    text: 'Deve conter uma pizza.',
+    check: v => v.includes('🍕') },
+
+  { category: 'Emojis',
+    text: 'Deve conter a bandeira da Argentina.',
+    check: v => v.includes('🇦🇷') },
+
+  { category: 'Emojis',
+    text: 'Deve conter uma nota musical.',
+    check: v => v.includes('🎵') || v.includes('🎶') },
+
+  { category: 'Emojis',
+    text: 'Deve conter pelo menos 5 emojis no total.',
+    check: v => emojis(v).length >= 5 },
+
+  /* ── CULTURA (15) ────────────────────────────────────── */
+  { category: 'Cultura',
+    text: 'Deve conter um feitiço de Harry Potter.',
+    check: v => v.toLowerCase().includes('alohomora') },
+
+  { category: 'Cultura',
+    text: 'Deve conter o nome do criador do jogo.',
+    check: v => v.toLowerCase().includes('boda_grande') },
+
+  { category: 'Cultura',
+    text: 'Deve conter o ano do Hexa da Seleção.',
+    check: v => v.includes('2026') },
+
+  { category: 'Cultura',
+    text: 'Deve conter o código de discagem do Brasil.',
+    check: v => v.includes('+55') },
+
+  { category: 'Cultura',
+    text: 'Deve conter um super-herói.',
+    check: v => has(v, ['batman','superman','homem-aranha','spider-man','flash','thor','hulk','ironman','homem de ferro','capitão america','wonder woman','aquaman','pantera negra']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter um planeta do sistema solar.',
+    check: v => has(v, ['mercúrio','vênus','terra','marte','júpiter','saturno','urano','netuno','mercurio','venus','jupiter']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter um dia da semana em português.',
+    check: v => has(v, ['segunda','terça','quarta','quinta','sexta','sábado','domingo','terca','sabado']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter um mês do ano em português.',
+    check: v => has(v, ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro','marco']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter uma nota musical.',
+    check: v => has(v, ['dó','ré','mi','fá','sol','lá','si']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter o nome de uma linguagem de programação.',
+    check: v => has(v, ['python','javascript','java','ruby','swift','kotlin','rust','golang','php','typescript','lua','haskell','c++','c#','perl','scala','elixir','clojure','fortran']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter o nome de um animal.',
+    check: v => has(v, ['gato','cachorro','peixe','cobra','leão','tigre','elefante','girafa','macaco','cavalo','urso','lobo','raposa','pato','sapo','águia','golfinho','tubarão','leao','aguia','coelho','porco','vaca','ovelha','onça']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter uma cor em português.',
+    check: v => has(v, ['vermelho','azul','verde','amarelo','laranja','roxo','rosa','preto','branco','cinza','marrom','dourado','prata','violeta','lilás','lilas','turquesa','magenta']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter uma comida brasileira.',
+    check: v => has(v, ['feijão','arroz','feijoada','coxinha','brigadeiro','caipirinha','churrasco','acarajé','tapioca','farofa','moqueca','feijao','guaraná','guarana','pamonha','cocada']) },
+
+  { category: 'Cultura',
+    text: 'Deve conter o ano de fundação do Brasil.',
+    check: v => v.includes('1500') },
+
+  { category: 'Cultura',
+    text: 'Deve conter o sinal de socorro internacional.',
+    check: v => v.includes('SOS') },
+
+  /* ── ESPECIAIS (6) ───────────────────────────────────── */
+  { category: 'Especiais',
+    text: 'Deve conter todas as vogais maiúsculas seguidas.',
+    check: v => v.includes('AEIOU') },
+
+  { category: 'Especiais',
+    text: 'Deve conter o símbolo de copyright.',
+    check: v => v.includes('©') },
+
+  { category: 'Especiais',
+    text: 'Deve conter o símbolo do dólar.',
+    check: v => v.includes('$') },
+
+  { category: 'Especiais',
+    text: 'Deve conter o símbolo de porcentagem.',
+    check: v => v.includes('%') },
+
+  { category: 'Especiais',
+    text: 'Deve conter o símbolo de arroba.',
+    check: v => v.includes('@') },
+
+  { category: 'Especiais',
+    text: 'Deve conter o dia de hoje em algarismos romanos.',
+    check: v => v.includes('XIV') },
+
+  /* ── ESTRUTURA (14) ──────────────────────────────────── */
+  { category: 'Estrutura',
+    text: 'Deve conter a palavra "senha".',
+    check: v => v.toLowerCase().includes('senha') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "ahnes".',
+    check: v => v.toLowerCase().includes('ahnes') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "lol".',
+    check: v => v.toLowerCase().includes('lol') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "ok".',
+    check: v => v.toLowerCase().includes('ok') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "www".',
+    check: v => v.toLowerCase().includes('www') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "XD".',
+    check: v => v.includes('XD') },
+
+  { category: 'Estrutura',
+    text: 'Deve conter "666".',
+    check: v => v.includes('666') },
+
+  { category: 'Estrutura',
+    text: 'A senha deve TERMINAR com "!".',
+    check: v => v.endsWith('!') },
+
+  { category: 'Estrutura',
+    text: 'A senha deve COMEÇAR com uma letra maiúscula.',
+    check: v => /^[A-Z]/.test(v) },
+
+  { category: 'Estrutura',
+    text: 'O número total de grafemas deve ser PAR.',
+    check: v => gs(v).length % 2 === 0 },
+
+  { category: 'Estrutura',
+    text: 'A soma de todos os dígitos da senha deve ser maior que 20.',
+    check: v => dsum(v) > 20 },
+
+  { category: 'Estrutura',
+    text: 'Deve conter pelo menos 3 tipos diferentes de caracteres especiais.',
+    check: v => spc(v).size >= 3 },
+
+  { category: 'Estrutura',
+    text: 'Deve conter dois dígitos consecutivos.',
+    check: v => { const d = digs(v); for (let i = 0; i < d.length-1; i++) if (+d[i+1] === +d[i]+1) return true; return false; } },
+
+  { category: 'Estrutura',
+    text: 'Deve conter pelo menos 4 dígitos distintos.',
+    check: v => new Set(digs(v)).size >= 4 },
+
+  /* ── DESAFIO FINAL (7) ───────────────────────────────── */
+  { category: 'Desafio',
+    text: 'O número de vogais na senha deve ser PAR.',
+    check: v => vowels(v) % 2 === 0 },
+
+  { category: 'Desafio',
+    text: 'Deve conter o nome de uma emoção.',
+    check: v => has(v, ['alegria','tristeza','medo','raiva','amor','ódio','odio','surpresa','nojo','ansiedade','felicidade','angústia','angustia','inveja','vergonha','euforia','saudade']) },
+
+  { category: 'Desafio',
+    text: 'Deve conter parte da sequência de Fibonacci ou a palavra "fibonacci".',
+    check: v => ['11235','fibonacci'].some(f => v.toLowerCase().includes(f)) },
+
+  { category: 'Desafio',
+    text: 'A senha deve ter pelo menos 8 palavras separadas por espaço.',
+    check: v => wds(v) >= 8 },
+
+  { category: 'Desafio',
+    text: 'Deve conter a gíria brasileira.',
+    check: v => v.toLowerCase().includes('bora') },
+
+  { category: 'Desafio',
+    text: 'Deve conter o nome de um continente.',
+    check: v => has(v, ['america','europa','ásia','africa','oceania','antártica','antartida','asia']) },
+
+  { category: 'Desafio',
+    text: 'A senha deve ter MENOS de 300 caracteres.',
+    check: v => gs(v).length < 300 },
+
+]);
+
+engine.shuffle();
+
+/* ═══════════════════════════════════════════════════════════
+   CHIPS CONFIG — caracteres inseríveis no painel de dicas
+   ═══════════════════════════════════════════════════════════ */
+const CHIPS = [
+  { g:'π',   l:'Pi' },       { g:'∞',  l:'Infinito' },
+  { g:'√',   l:'Raiz √' },   { g:'²',  l:'Superscript' },
+  { g:'©',   l:'Copyright' },{ g:'$',  l:'Dólar' },
+  { g:'%',   l:'Porcento' }, { g:'@',  l:'Arroba' },
+  { g:'❤️',  l:'Coração' },  { g:'👆', l:'Dedo' },
+  { g:'🔥',  l:'Fogo' },     { g:'🍕', l:'Pizza' },
+  { g:'🎵',  l:'Nota ♪' },   { g:'🇳🇱', l:'Holanda' },
+  { g:'🇧🇷', l:'Brasil' },   { g:'🇦🇷', l:'Argentina' },
+  { g:'E=mc²',l:'Einstein'}, { g:'H2O',l:'Água' },
+  { g:'AEIOU',l:'Vogais' },  { g:'XIV', l:'Romano' },
+  { g:'3.14', l:'Pi Digits'},{ g:'1.618',l:'Áureo' },
+  { g:'11235',l:'Fibonacci'},{ g:'SOS', l:'Socorro'},
+];
+
+/* ═══════════════════════════════════════════════════════════
+   UI LOGIC
+   ═══════════════════════════════════════════════════════════ */
+const $   = id => document.getElementById(id);
+const pw       = $('pw');
+const rulesEl  = $('rules');
+const progFill = $('progFill');
+const progLbl  = $('progLbl');
+const topFill  = $('top-fill');
+const carCnt   = $('carcnt');
+const toastEl  = $('toast');
+const victoryEl= $('victory');
+const confEl   = $('confetti');
+
+let prevVisLen = 0;
+let won = false;
+let toastTmr = null;
+
+/* create card DOM element */
+function createCard(rule) {
+  const div = document.createElement('div');
+  div.className = `rcard cc-${rule.slug}${rule.passed ? ' passed' : ''}`;
+  div.dataset.id     = rule.id;
+  div.dataset.passed = rule.passed;
+  div.innerHTML = `
+    <div class="ricon">${rule.passed ? '✅' : '❌'}</div>
+    <div class="rcontent">
+      <div class="rmeta">
+        <span class="rnum">#${String(rule.id).padStart(2,'0')}</span>
+        <span class="rcat">${rule.category.toUpperCase()}</span>
+      </div>
+      <div class="rtext">${rule.text}</div>
+    </div>`;
+  return div;
+}
+
+/* update existing card state (only when changed) */
+function syncCard(card, rule) {
+  const prev = card.dataset.passed === 'true';
+  if (prev === rule.passed) return;
+  card.dataset.passed = rule.passed;
+  const icon = card.querySelector('.ricon');
+  icon.textContent = rule.passed ? '✅' : '❌';
+  if (rule.passed) {
+    card.classList.add('passed', 'just-passed');
+    void icon.offsetWidth; // reflow for animation reset
+    setTimeout(() => card.classList.remove('just-passed'), 750);
+  } else {
+    card.classList.remove('passed', 'just-passed');
+  }
+}
+
+/* toast notification */
+function showToast(msg = '🔓 Nova regra desbloqueada!') {
+  clearTimeout(toastTmr);
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  toastTmr = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+/* ── MAIN UPDATE ─────────────────────────────────────────── */
+function update() {
+  const v   = pw.value;
+  const st  = engine.stats(v);
+  const vis = engine.visible(v);
+
+  /* progress */
+  progFill.style.width = topFill.style.width = st.pct + '%';
+  progLbl.textContent  = `${st.passed}/${st.total}`;
+  carCnt.textContent   = `${gs(v).length} car.`;
+
+  /* toast on new rule unlock */
+  if (vis.length > prevVisLen) showToast();
+  prevVisLen = vis.length;
+
+  /* get current active (non-removing) cards */
+  const cur = [...rulesEl.querySelectorAll('.rcard:not(.removing)')];
+
+  /* remove excess cards from the end */
+  for (let i = vis.length; i < cur.length; i++) {
+    const el = cur[i];
+    el.classList.add('removing');
+    setTimeout(() => el.remove(), 330);
+  }
+
+  /* update existing cards */
+  const upTo = Math.min(vis.length, cur.length);
+  for (let i = 0; i < upTo; i++) syncCard(cur[i], vis[i]);
+
+  /* append new cards */
+  for (let i = cur.length; i < vis.length; i++) {
+    rulesEl.appendChild(createCard(vis[i]));
+  }
+
+  /* victory */
+  if (st.done && !won) { won = true; setTimeout(triggerVictory, 700); }
+}
+
+/* ── CONFETTI ────────────────────────────────────────────── */
+function launchConfetti() {
+  confEl.innerHTML = '';
+  const bits = ['●','■','▲','★','◆','✦','⬟','❋'];
+  const cols = ['#f472b6','#22d3ee','#4ade80','#fbbf24','#c084fc','#fb923c','#f87171'];
+  for (let i = 0; i < 140; i++) {
+    const el = document.createElement('div');
+    el.className = 'cbit';
+    el.textContent = bits[Math.random() * bits.length | 0];
+    el.style.cssText = `
+      left:${Math.random() * 100}%;
+      color:${cols[Math.random() * cols.length | 0]};
+      font-size:${8 + Math.random() * 16}px;
+      --dx:${(Math.random() - .5) * 240}px;
+      animation-delay:${Math.random() * 2.2}s;
+      animation-duration:${3 + Math.random() * 2.4}s;`;
+    confEl.appendChild(el);
+  }
+}
+
+function triggerVictory() {
+  victoryEl.classList.add('show');
+  launchConfetti();
+}
+
+/* ── RESTART ─────────────────────────────────────────────── */
+function restart() {
+  won = false; prevVisLen = 0;
+  pw.value = '';
+  victoryEl.classList.remove('show');
+  confEl.innerHTML = '';
+  rulesEl.innerHTML = '';
+  update();
+  pw.focus();
+}
+
+/* ── INSERT CHAR AT CURSOR ───────────────────────────────── */
+function insertChar(ch) {
+  const s = pw.selectionStart, e = pw.selectionEnd;
+  pw.value = pw.value.slice(0, s) + ch + pw.value.slice(e);
+  pw.selectionStart = pw.selectionEnd = s + ch.length;
+  pw.focus();
+  update();
+}
+
+/* ── HINTS TOGGLE ────────────────────────────────────────── */
+function toggleHints(btn) {
+  const body = $('hintsBody');
+  const isOpen = body.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+}
+
+/* ── INIT ────────────────────────────────────────────────── */
+
+/* date string */
+const now = new Date();
+$('dateStr').textContent = now.toLocaleDateString('pt-BR', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+});
+const isPiDay = now.getMonth() === 2 && now.getDate() === 14;
+$('piDay').textContent = isPiDay
+  ? '🥧 Dia do Pi! (14/03) — não esqueça o π'
+  : `${now.toLocaleDateString('pt-BR')} — XIV em romanos = hoje`;
+
+/* build chips */
+const grid = $('chipsGrid');
+CHIPS.forEach(({ g, l }) => {
+  const btn = document.createElement('button');
+  btn.className = 'chip';
+  btn.dataset.insert = g;
+  btn.innerHTML = `<span class="chip-glyph">${g}</span><span class="chip-lbl">${l}</span>`;
+  btn.addEventListener('click', () => insertChar(g));
+  grid.appendChild(btn);
+});
+
+/* listen */
+pw.addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
