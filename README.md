@@ -1,8 +1,7 @@
 # O Pior Jogo de Senha do Mundo
 
 ## 🎮 Para jogar
-**Link:** https://example.com/o-pior-jogo-de-senha  
-*(substitua pelo link do seu deploy — GitHub Pages, Netlify, etc.)*
+**[Acesse o jogo clicando nesse texto!](https://henzopaes.github.io/O-PIOR-JOGO-DE-SENHA-DO-MUNDO/)** 
 
 vlw 👍
 
