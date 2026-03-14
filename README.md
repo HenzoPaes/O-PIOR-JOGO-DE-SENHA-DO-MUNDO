@@ -1,0 +1,2 @@
+# O-PIOR-JOGO-DE-SENHA-DO-MUNDO
+Em português
