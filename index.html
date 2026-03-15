@@ -289,8 +289,19 @@ const engine = new RuleEngine().addRules([
   {category:'Básico',     text:'Deve conter pelo menos um número.',                                              check:v=>/\d/.test(v)},
   {category:'Básico',     text:'Deve conter pelo menos uma letra maiúscula.',                                    check:v=>/[A-Z]/.test(v)},
   {category:'Básico',     text:'Deve conter pelo menos uma letra minúscula.',                                    check:v=>/[a-z]/.test(v)},
-  {category:'Emojis',     text:'Deve conter pelo menos um emoji.',                                               check:v=>emojis(v).length>0},
-
+  {
+    category: "Básico",
+    text: "A senha deve conter pelo menos 1 emoji.",
+    check: v => {
+      const seg = new Intl.Segmenter(undefined,{granularity:"grapheme"});
+      let count = 0;
+      for (const g of seg.segment(v)) {
+        if (/\p{Extended_Pictographic}/u.test(g.segment)) count++;
+      }
+      return count >= 1;
+    }
+  },
+  
   /* MATEMÁTICA — 12 */
   {category:'Matemática', text:'Deve conter os primeiros dígitos de Pi.',                                        check:v=>v.includes('3.14')},
   {category:'Matemática', text:'Hoje é o Dia do Pi (14/03)! Inclua o símbolo.',                                    check:v=>v.includes('π')},
@@ -305,7 +316,7 @@ const engine = new RuleEngine().addRules([
   {category:'Matemática', text:'Deve conter o resultado de 13² − 7.',                                             check:v=>v.includes('162')},
   {category:'Matemática', text:'Deve conter o MMC entre 12 e 18.',                                                 check:v=>v.includes('36')},
 
-  /* EMOJIS — 10 */
+  /* EMOJIS — 9 */
   {category:'Emojis',     text:'Deve conter o emoji de dedo apontando para cima.',                                check:v=>v.includes('👆')},
   {category:'Emojis',     text:'Deve conter a bandeira da Holanda.',                                                check:v=>v.includes('🇳🇱')},
   {category:'Emojis',     text:'A bandeira da Holanda deve estar na 5ª posição (índice 4).',                        check:v=>gs(v).indexOf('🇳🇱')===4},
@@ -313,7 +324,6 @@ const engine = new RuleEngine().addRules([
   {category:'Emojis',     text:'Deve conter o emoji de fogo.',                                                       check:v=>v.includes('🔥')},
   {category:'Emojis',     text:'Deve conter um coração.',                                                          check:v=>v.includes('❤')},
   {category:'Emojis',     text:'Deve conter uma pizza.',                                                            check:v=>v.includes('🍕')},
-  {category:'Emojis',     text:'Deve conter a bandeira da Argentina.',                                             check:v=>v.includes('🇦🇷')},
   {category:'Emojis',     text:'Deve conter uma nota musical.',                                                     check:v=>v.includes('🎵')||v.includes('🎶')},
   {category:'Emojis',     text:'Deve conter pelo menos 5 emojis no total.',                                         check:v=>emojis(v).length>=5},
 
